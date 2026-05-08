@@ -45,6 +45,11 @@ function photosOf(q) {
   return Array.isArray(v) ? v : []
 }
 
+function signatureOf(q) {
+  const v = inspection.value && inspection.value.responses ? inspection.value.responses[q.id] : null
+  return v && typeof v === 'object' && v.dataUrl ? v : null
+}
+
 function print() { window.print() }
 </script>
 
@@ -123,13 +128,24 @@ function print() { window.print() }
             <li v-for="q in s.questions" :key="q.id" class="py-1.5">
               <div class="flex justify-between gap-3">
                 <span>{{ q.text }}</span>
-                <span v-if="q.responseType !== 'photo'" class="text-slate-800 font-medium">{{ inspection.responses[q.id] || '-' }}</span>
-                <span v-else-if="!photosOf(q).length" class="text-slate-400">no photos</span>
-                <span v-else class="text-slate-500">{{ photosOf(q).length }} photo{{ photosOf(q).length === 1 ? '' : 's' }}</span>
+                <span v-if="q.responseType === 'photo'" :class="photosOf(q).length ? 'text-slate-500' : 'text-slate-400'">
+                  {{ photosOf(q).length ? photosOf(q).length + ' photo' + (photosOf(q).length === 1 ? '' : 's') : 'no photos' }}
+                </span>
+                <span v-else-if="q.responseType === 'signature'" :class="signatureOf(q) ? 'text-slate-500' : 'text-slate-400'">
+                  {{ signatureOf(q) ? 'Signed' : 'unsigned' }}
+                </span>
+                <span v-else class="text-slate-800 font-medium">{{ inspection.responses[q.id] || '-' }}</span>
               </div>
               <div v-if="q.responseType === 'photo' && photosOf(q).length" class="mt-2 flex flex-wrap gap-2">
                 <img v-for="p in photosOf(q)" :key="p.id" :src="p.dataUrl" :alt="p.name"
                   class="w-24 h-24 object-cover rounded-md border border-slate-200" />
+              </div>
+              <div v-if="q.responseType === 'signature' && signatureOf(q)" class="mt-2">
+                <img :src="signatureOf(q).dataUrl" alt="signature"
+                  class="h-16 border border-slate-200 rounded-md bg-white px-2" />
+                <div class="text-[11px] text-slate-500 mt-1">
+                  {{ signatureOf(q).signerName || 'Inspector' }} - {{ new Date(signatureOf(q).signedAt).toLocaleString() }}
+                </div>
               </div>
             </li>
           </ul>
