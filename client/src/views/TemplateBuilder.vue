@@ -10,7 +10,7 @@ import { useToastStore } from '../stores/toast'
 import { useScoringStore } from '../stores/scoring'
 import { responseTypes, hazardCategories, criticalControls } from '../data/ehsTaxonomy'
 import { calculateScore } from '../services/scoringService'
-import { Plus, Trash2, ChevronUp, ChevronDown, Save, CheckCircle2 } from 'lucide-vue-next'
+import { Plus, Trash2, ChevronUp, ChevronDown, Save, CheckCircle2, GripVertical } from 'lucide-vue-next'
 import { uid } from '../utils/downloadJson'
 
 const route = useRoute()
@@ -95,6 +95,69 @@ function move(arr, idx, dir) {
   arr.splice(t, 0, it)
 }
 
+// Drag-and-drop reordering. Sections drag among sections; questions reorder
+// within a section or move between sections. Drag handles are dedicated grip
+// icons so the up/down buttons stay as a touch/keyboard fallback.
+const drag = ref({ kind: null, srcSection: -1, srcQuestion: -1 })
+const dropHint = ref({ kind: null, section: -1, question: -1 })
+
+function startDragSection(e, si) {
+  drag.value = { kind: 'section', srcSection: si, srcQuestion: -1 }
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', 'section:' + si)
+}
+function startDragQuestion(e, si, qi) {
+  drag.value = { kind: 'question', srcSection: si, srcQuestion: qi }
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', 'question:' + si + ':' + qi)
+}
+function onDragOverSection(e, si) {
+  if (!drag.value.kind) return
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  if (drag.value.kind === 'section') {
+    if (si !== drag.value.srcSection) dropHint.value = { kind: 'section', section: si, question: -1 }
+  } else {
+    // question dragged onto a section header = append to that section
+    dropHint.value = { kind: 'section-target', section: si, question: -1 }
+  }
+}
+function onDragOverQuestion(e, si, qi) {
+  if (drag.value.kind !== 'question') return
+  e.preventDefault()
+  e.stopPropagation()
+  e.dataTransfer.dropEffect = 'move'
+  dropHint.value = { kind: 'question', section: si, question: qi }
+}
+function onDropSection(e, si) {
+  e.preventDefault()
+  if (drag.value.kind === 'section' && si !== drag.value.srcSection) {
+    const [s] = template.value.sections.splice(drag.value.srcSection, 1)
+    template.value.sections.splice(si, 0, s)
+  } else if (drag.value.kind === 'question') {
+    const src = template.value.sections[drag.value.srcSection]
+    const [q] = src.questions.splice(drag.value.srcQuestion, 1)
+    template.value.sections[si].questions.push(q)
+  }
+  resetDrag()
+}
+function onDropQuestion(e, si, qi) {
+  e.preventDefault()
+  e.stopPropagation()
+  if (drag.value.kind !== 'question') return
+  const src = template.value.sections[drag.value.srcSection]
+  const [q] = src.questions.splice(drag.value.srcQuestion, 1)
+  let insertAt = qi
+  // adjust for the spliced-out item when reordering inside the same section
+  if (drag.value.srcSection === si && drag.value.srcQuestion < qi) insertAt = qi - 1
+  template.value.sections[si].questions.splice(insertAt, 0, q)
+  resetDrag()
+}
+function resetDrag() {
+  drag.value = { kind: null, srcSection: -1, srcQuestion: -1 }
+  dropHint.value = { kind: null, section: -1, question: -1 }
+}
+
 function save(publish = false) {
   if (publish) template.value.status = 'published'
   store.save(template.value)
@@ -131,18 +194,43 @@ const livePreviewScore = computed(() => {
           <button class="text-primary-600 hover:text-primary-700" @click="addSection"><Plus class="w-4 h-4" /></button>
         </div>
         <div class="p-2 max-h-[70vh] overflow-y-auto thin-scroll">
-          <div v-for="(s, si) in template.sections" :key="s.id" class="mb-3">
+          <div v-for="(s, si) in template.sections" :key="s.id"
+            class="mb-3 transition-colors"
+            @dragover="onDragOverSection($event, si)"
+            @drop="onDropSection($event, si)"
+            :class="[
+              dropHint.kind === 'section' && dropHint.section === si ? 'rounded ring-2 ring-primary-400' : '',
+              dropHint.kind === 'section-target' && dropHint.section === si ? 'rounded ring-2 ring-emerald-400 bg-emerald-50/40' : ''
+            ]">
             <div class="flex items-center gap-1 px-2 py-1.5 rounded bg-slate-50">
+              <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 flex-none"
+                draggable="true"
+                title="Drag to reorder section"
+                @dragstart="startDragSection($event, si)"
+                @dragend="resetDrag">
+                <GripVertical class="w-3.5 h-3.5" />
+              </span>
               <input v-model="s.title" class="flex-1 text-sm font-medium text-slate-700 bg-transparent focus:outline-none" />
               <button class="text-slate-400 hover:text-slate-600" @click="move(template.sections, si, -1)"><ChevronUp class="w-3.5 h-3.5" /></button>
               <button class="text-slate-400 hover:text-slate-600" @click="move(template.sections, si, 1)"><ChevronDown class="w-3.5 h-3.5" /></button>
               <button class="text-red-400 hover:text-red-600" @click="removeSection(s)"><Trash2 class="w-3.5 h-3.5" /></button>
             </div>
             <ul class="mt-1 space-y-0.5">
-              <li v-for="q in s.questions" :key="q.id"
+              <li v-for="(q, qi) in s.questions" :key="q.id"
                 @click="selectedQId = q.id"
-                :class="['text-xs px-2 py-1.5 rounded cursor-pointer truncate flex items-center gap-1',
+                @dragover="onDragOverQuestion($event, si, qi)"
+                @drop="onDropQuestion($event, si, qi)"
+                :class="['text-xs px-2 py-1.5 rounded cursor-pointer truncate flex items-center gap-1 transition-colors',
+                  dropHint.kind === 'question' && dropHint.section === si && dropHint.question === qi ? 'ring-2 ring-primary-400' : '',
                   selectedQId === q.id ? 'bg-primary-50 text-primary-800' : 'text-slate-600 hover:bg-slate-50']">
+                <span class="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 flex-none"
+                  draggable="true"
+                  title="Drag to reorder or move to another section"
+                  @click.stop
+                  @dragstart.stop="startDragQuestion($event, si, qi)"
+                  @dragend="resetDrag">
+                  <GripVertical class="w-3 h-3" />
+                </span>
                 <span v-if="q.criticality === 'critical'" class="w-1.5 h-1.5 rounded-full bg-red-500 flex-none" />
                 <span v-else-if="q.criticality === 'high'" class="w-1.5 h-1.5 rounded-full bg-amber-500 flex-none" />
                 <span v-else class="w-1.5 h-1.5 rounded-full bg-slate-300 flex-none" />
