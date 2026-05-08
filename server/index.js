@@ -1,5 +1,8 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 import { authMiddleware } from './middleware/auth.js'
 import { loadDb } from './data/store.js'
 import authRoutes from './routes/auth.js'
@@ -41,12 +44,25 @@ app.use('/api/scoring', scoringRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/reports', reportRoutes)
 
+// Serve the built client when present (single-service production deploy).
+// Local dev still uses the Vite dev server on a separate port, so we only
+// register these handlers if the client/dist directory has been built.
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const clientDist = path.resolve(__dirname, '../client/dist')
+if (fs.existsSync(path.join(clientDist, 'index.html'))) {
+  app.use(express.static(clientDist))
+  app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'))
+  })
+  console.log('[checkwise-server] serving client from', clientDist)
+}
+
 app.use((err, req, res, next) => {
   console.error(err)
   res.status(500).json({ error: err.message })
 })
 
 const port = process.env.PORT || 4000
-app.listen(port, () => {
-  console.log('[checkwise-server] listening on http://localhost:' + port)
+app.listen(port, '0.0.0.0', () => {
+  console.log('[checkwise-server] listening on port ' + port)
 })

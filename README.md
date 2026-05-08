@@ -31,8 +31,15 @@ Then open http://localhost:5173.
 
 ```bash
 npm run build      # builds client into client/dist
-npm start          # serves API on port 4000
+npm start          # server serves API + the built client on $PORT (default 4000)
 ```
+
+In production the server detects `client/dist` and serves it as static
+files with SPA fallback, so the whole app runs as a single service. It
+binds to `0.0.0.0` and reads `PORT` from the environment, which works
+out of the box on Railway, Render, Fly.io, etc. Note: `db.json` lives
+on the local filesystem, so on platforms with ephemeral storage the
+seed data regenerates on each restart.
 
 ## Demo Login
 
