@@ -40,6 +40,11 @@ const flagged = computed(() => {
   return out
 })
 
+function photosOf(q) {
+  const v = inspection.value && inspection.value.responses ? inspection.value.responses[q.id] : null
+  return Array.isArray(v) ? v : []
+}
+
 function print() { window.print() }
 </script>
 
@@ -115,9 +120,17 @@ function print() { window.print() }
         <div v-for="s in template.sections" :key="s.id">
           <div class="text-sm font-semibold text-slate-800">{{ s.title }}</div>
           <ul class="mt-1 text-xs text-slate-600 divide-y divide-slate-100">
-            <li v-for="q in s.questions" :key="q.id" class="py-1.5 flex justify-between gap-3">
-              <span>{{ q.text }}</span>
-              <span class="text-slate-800 font-medium">{{ inspection.responses[q.id] || '-' }}</span>
+            <li v-for="q in s.questions" :key="q.id" class="py-1.5">
+              <div class="flex justify-between gap-3">
+                <span>{{ q.text }}</span>
+                <span v-if="q.responseType !== 'photo'" class="text-slate-800 font-medium">{{ inspection.responses[q.id] || '-' }}</span>
+                <span v-else-if="!photosOf(q).length" class="text-slate-400">no photos</span>
+                <span v-else class="text-slate-500">{{ photosOf(q).length }} photo{{ photosOf(q).length === 1 ? '' : 's' }}</span>
+              </div>
+              <div v-if="q.responseType === 'photo' && photosOf(q).length" class="mt-2 flex flex-wrap gap-2">
+                <img v-for="p in photosOf(q)" :key="p.id" :src="p.dataUrl" :alt="p.name"
+                  class="w-24 h-24 object-cover rounded-md border border-slate-200" />
+              </div>
             </li>
           </ul>
         </div>

@@ -62,7 +62,7 @@ server/  Express API with JSON persistence
 
 ## Roadmap (deferred)
 
-- Real photo upload + signature capture
+- Signature capture (photo capture is implemented - up to 6 client-resized JPEGs per question)
 - IndexedDB-backed offline queue
 - WebSocket multi-user sync
 - PDF export via library

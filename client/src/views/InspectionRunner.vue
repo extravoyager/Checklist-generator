@@ -5,6 +5,7 @@ import Button from '../components/ui/Button.vue'
 import Badge from '../components/ui/Badge.vue'
 import Drawer from '../components/ui/Drawer.vue'
 import Modal from '../components/ui/Modal.vue'
+import PhotoCapture from '../components/inspection-runner/PhotoCapture.vue'
 import { useInspectionStore } from '../stores/inspections'
 import { useTemplateStore } from '../stores/templates'
 import { useScoringStore } from '../stores/scoring'
@@ -82,6 +83,13 @@ function setResponse(value) {
   localStorage.setItem('checkwise.inspection.' + inspection.value.id, JSON.stringify(inspection.value.responses))
   pushQueue({ type: 'response', inspectionId: inspection.value.id, qid: currentQuestion.value.id, value })
   offlineCount.value = queueLength()
+}
+
+// Photo responses are arrays of compressed image objects. Empty array -> undefined so
+// required-question completion checks treat it as unanswered.
+function photoValue(v) { return Array.isArray(v) ? v : [] }
+function onPhotosChange(arr) {
+  setResponse(arr && arr.length ? arr : undefined)
 }
 
 function next() { if (currentIndex.value < flatQuestions.value.length - 1) currentIndex.value++ }
@@ -192,10 +200,9 @@ const responseOptions = computed(() => {
             :value="inspection.responses[currentQuestion.id] || ''" @input="e => setResponse(e.target.value)" class="input" />
           <input v-else-if="currentQuestion.responseType === 'time'" type="time"
             :value="inspection.responses[currentQuestion.id] || ''" @input="e => setResponse(e.target.value)" class="input" />
-          <div v-else-if="currentQuestion.responseType === 'photo'" class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-sm text-slate-500">
-            Photo capture (placeholder) <button class="block mt-2 text-primary-600 mx-auto" @click="setResponse('captured-' + Date.now())">Mark photo captured</button>
-            <div v-if="inspection.responses[currentQuestion.id]" class="text-xs text-emerald-700 mt-2">Photo recorded</div>
-          </div>
+          <PhotoCapture v-else-if="currentQuestion.responseType === 'photo'"
+            :model-value="photoValue(inspection.responses[currentQuestion.id])"
+            @update:modelValue="onPhotosChange" />
           <div v-else-if="currentQuestion.responseType === 'signature'" class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-sm text-slate-500">
             <button class="text-primary-600" @click="setResponse('signed-' + auth.user.name)">Sign as {{ auth.user.name }}</button>
             <div v-if="inspection.responses[currentQuestion.id]" class="text-xs text-emerald-700 mt-2">{{ inspection.responses[currentQuestion.id] }}</div>
