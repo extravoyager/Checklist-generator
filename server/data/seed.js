@@ -1,5 +1,7 @@
 // Server-side seed data. Mirrors the logical data shape used in the client.
 
+import { preBuiltChecklists } from '../../shared/preBuiltChecklists.js'
+
 const hazardCategories = [
   { id: 'work-at-height', label: 'Work at Height' },
   { id: 'electrical', label: 'Electrical / Energy' },
@@ -100,10 +102,11 @@ function buildInspections() {
   const statuses = ['in_progress', 'completed', 'completed', 'completed', 'pending_approval', 'critical_failure', 'completed']
   for (let i = 0; i < 40; i++) {
     const site = sites[i % sites.length]; const inspector = users[3 + (i % 9)]; const status = statuses[i % 7]
+    const tpl = preBuiltChecklists[i % preBuiltChecklists.length]
     list.push({
       id: 'ins-' + (i + 1).toString().padStart(3, '0'),
-      templateId: 'pb-' + ((i % 30) + 1).toString().padStart(3, '0'),
-      templateTitle: 'Pre-built template ' + ((i % 30) + 1),
+      templateId: tpl.id,
+      templateTitle: tpl.title,
       siteId: site.id, siteName: site.name, assignedTo: inspector.id, assignedToName: inspector.name,
       status, progress: status === 'in_progress' ? 60 : 100,
       score: status === 'in_progress' ? null : (status === 'critical_failure' ? 38 : 65 + (i * 7) % 30),
@@ -167,7 +170,8 @@ export function buildSeed() {
     users, roles, sites,
     regions: [{ id: 'r-001', name: 'North America' }, { id: 'r-002', name: 'EMEA' }, { id: 'r-003', name: 'Asia Pacific' }],
     assets,
-    templates: [], // server starts empty, frontend has full library
+    templates: [], // custom templates start empty; users create via UI/generator
+    prebuiltChecklists: preBuiltChecklists,
     inspections: buildInspections(),
     actions: buildActions(),
     findings: buildFindings(),

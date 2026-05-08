@@ -4,6 +4,7 @@ import { authMiddleware } from './middleware/auth.js'
 import { loadDb } from './data/store.js'
 import authRoutes from './routes/auth.js'
 import templateRoutes from './routes/templates.js'
+import prebuiltRoutes from './routes/prebuilt.js'
 import inspectionRoutes from './routes/inspections.js'
 import actionRoutes from './routes/actions.js'
 import findingRoutes from './routes/findings.js'
@@ -29,7 +30,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/roles', roleRoutes)
 app.use('/api/templates', templateRoutes)
-app.use('/api/prebuilt-checklists', templateRoutes)
+app.use('/api/prebuilt-checklists', prebuiltRoutes)
 app.use('/api/inspections', inspectionRoutes)
 app.use('/api/actions', actionRoutes)
 app.use('/api/findings', findingRoutes)

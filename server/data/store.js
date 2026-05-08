@@ -13,6 +13,13 @@ export async function loadDb() {
     const raw = await fs.readFile(DB_PATH, 'utf-8')
     Object.assign(db, JSON.parse(raw))
     if (!db.users || !db.users.length) throw new Error('empty')
+    // Backfill any missing top-level collections from a fresh seed so older db.json files stay compatible.
+    const fresh = buildSeed()
+    let backfilled = false
+    for (const key of Object.keys(fresh)) {
+      if (db[key] === undefined) { db[key] = fresh[key]; backfilled = true }
+    }
+    if (backfilled) await saveDb()
   } catch {
     Object.assign(db, buildSeed())
     await saveDb()
