@@ -1,45 +1,11 @@
 // Server-side seed data. Mirrors the logical data shape used in the client.
 
 import { preBuiltChecklists } from '../../shared/preBuiltChecklists.js'
+import { defaultRoles } from '../../shared/defaultRoles.js'
+import { hazardCategories } from '../../shared/ehsTaxonomy.js'
+import { defaultScoringConfig } from '../../shared/scoringDefaults.js'
 
-const hazardCategories = [
-  { id: 'work-at-height', label: 'Work at Height' },
-  { id: 'electrical', label: 'Electrical / Energy' },
-  { id: 'confined-space', label: 'Confined Space' },
-  { id: 'hot-work', label: 'Hot Work' },
-  { id: 'lifting', label: 'Lifting Operations' },
-  { id: 'mobile-plant', label: 'Mobile Plant / Vehicles' },
-  { id: 'machine-guarding', label: 'Machine Guarding' },
-  { id: 'chemical', label: 'Chemical Hazards' },
-  { id: 'fire', label: 'Fire / Emergency' },
-  { id: 'environmental', label: 'Environmental' },
-  { id: 'housekeeping', label: 'Housekeeping' },
-  { id: 'ppe', label: 'PPE / Compliance' }
-]
-
-const allPermissions = [
-  'template.view', 'template.create', 'template.edit', 'template.publish', 'template.duplicate', 'template.delete', 'template.archive',
-  'inspection.view', 'inspection.create', 'inspection.run', 'inspection.complete', 'inspection.approve', 'inspection.delete',
-  'action.view', 'action.create', 'action.edit', 'action.close', 'action.verify', 'action.delete',
-  'finding.view', 'finding.create', 'finding.edit', 'finding.delete',
-  'analytics.view', 'analytics.export', 'asset.view', 'asset.edit',
-  'admin.view', 'admin.manage_users', 'admin.manage_sites', 'admin.manage_assets', 'admin.manage_taxonomy', 'admin.manage_roles', 'admin.scoring', 'admin.branding'
-]
-
-const roles = [
-  { id: 'super-admin', name: 'Super Admin', permissions: allPermissions },
-  { id: 'ehs-admin', name: 'EHS Admin', permissions: allPermissions.filter(p => p !== 'admin.manage_roles') },
-  { id: 'corporate-ehs', name: 'Corporate EHS Manager', permissions: ['template.view','template.create','template.edit','template.publish','template.duplicate','template.archive','inspection.view','inspection.approve','action.view','action.edit','action.verify','finding.view','finding.edit','analytics.view','analytics.export','asset.view','admin.view','admin.scoring'] },
-  { id: 'regional-ehs', name: 'Regional EHS Manager', permissions: ['template.view','template.duplicate','inspection.view','inspection.approve','action.view','action.edit','action.verify','finding.view','finding.edit','analytics.view','asset.view'] },
-  { id: 'site-ehs', name: 'Site EHS Manager', permissions: ['template.view','template.create','template.edit','template.duplicate','template.publish','inspection.view','inspection.create','inspection.run','inspection.complete','inspection.approve','action.view','action.create','action.edit','action.close','action.verify','finding.view','finding.create','finding.edit','analytics.view','asset.view'] },
-  { id: 'site-manager', name: 'Site Manager', permissions: ['template.view','inspection.view','inspection.create','inspection.run','inspection.complete','action.view','action.create','action.edit','action.close','finding.view','analytics.view','asset.view'] },
-  { id: 'supervisor', name: 'Supervisor', permissions: ['template.view','inspection.view','inspection.create','inspection.run','inspection.complete','action.view','action.create','action.edit','finding.view','asset.view'] },
-  { id: 'inspector', name: 'Inspector', permissions: ['template.view','inspection.view','inspection.create','inspection.run','inspection.complete','action.view','action.create','finding.view','finding.create','asset.view'] },
-  { id: 'contractor-inspector', name: 'Contractor Inspector', permissions: ['template.view','inspection.view','inspection.run','inspection.complete','action.view','action.create','finding.view','asset.view'] },
-  { id: 'template-builder', name: 'Template Builder', permissions: ['template.view','template.create','template.edit','template.publish','template.duplicate','template.archive','inspection.view'] },
-  { id: 'action-owner', name: 'Action Owner', permissions: ['action.view','action.edit','action.close','finding.view','inspection.view'] },
-  { id: 'viewer', name: 'Viewer', permissions: ['template.view','inspection.view','action.view','finding.view','analytics.view','asset.view'] }
-]
+const roles = defaultRoles
 
 const users = [
   { id: 'u-001', name: 'Alex Reynolds', email: 'alex.reynolds@checkwise.demo', roleId: 'super-admin', siteId: null, initials: 'AR', color: '#3f6896' },
@@ -85,17 +51,7 @@ function buildAssets() {
 
 const assets = buildAssets()
 
-const scoringConfig = {
-  method: 'simple_percentage', passThreshold: 75, naTreatment: 'exclude',
-  criticalFailureCap: 50, criticalFailureMode: 'cap',
-  bands: [
-    { id: 'excellent', label: 'Excellent', min: 90, max: 100, color: 'emerald' },
-    { id: 'good', label: 'Good', min: 75, max: 89, color: 'blue' },
-    { id: 'needs', label: 'Needs Improvement', min: 60, max: 74, color: 'amber' },
-    { id: 'poor', label: 'Poor', min: 40, max: 59, color: 'orange' },
-    { id: 'critical', label: 'Critical Concern', min: 0, max: 39, color: 'red' }
-  ]
-}
+const scoringConfig = defaultScoringConfig
 
 function buildInspections() {
   const list = []

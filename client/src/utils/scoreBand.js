@@ -1,9 +1,5 @@
-import { defaultScoringConfig } from '../data/scoringDefaults'
-
-export function getBand(score, bands = defaultScoringConfig.bands) {
-  if (score === null || score === undefined || isNaN(score)) return bands[bands.length - 1]
-  return bands.find(b => score >= b.min && score <= b.max) || bands[bands.length - 1]
-}
+// getBand lives in the shared scoring engine; this module only carries UI-only helpers.
+export { getBand } from '../../../shared/scoringService.js'
 
 export function bandColorClasses(color) {
   const map = {
